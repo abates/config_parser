@@ -1,0 +1,65 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'utils_helper'
+require 'junos/parser'
+require 'junos_configurer'
+require 'thor/group'
+require 'srx_addr_mgmt'
+require 'srx_policy_mgmt'
+
+class SrxUtils < Utils
+  register(SrxAddrMgmt, 'addr_mgmt', 'addr_mgmt <command>', 'Address management commands')
+  register(SrxPolicyMgmt, 'policy_mgmt', 'policy_mgmt <command>', 'Policy management commands')
+
+  desc "test [device (dfr|nfr)]", "Test running a command"
+  def test device
+    run_command(device, '"show configuration" > config.txt')
+  end
+
+  desc "edit [device (dfr|nfr)]", "Edit the most recent config file"
+  def edit device
+    config_file = recent_config_file(device)
+    system('vim', "#{config_file}")
+  end
+
+  desc "parse [device (dfr|nfr)]", "Test parse a config"
+  def parse device
+    config = recent_config(device)
+  end
+
+  desc "convert_to_set <config file>", "Convert a config file to set commands"
+  def convert_to_set config_file
+    if (File.directory?(config_file))
+      Dir.entries(config_file).each do |file|
+        next if (file == '.' || file == '..')
+        say("Converting #{config_file}/#{file}", [:green, :bold])
+        file = File.open("#{config_file}/#{file}")
+        tmp_file = File.open("#{config_file}/#{file}.tmp", 'w+')
+        line = ''
+        stack = []
+        while (line = file.gets)
+          next if line =~ /^\s*$/
+          next if line =~ /^\s*set/
+          line.strip!
+          if (line =~ /(.+)\s+\{$/)
+            stack.push($1)
+          elsif (line =~ /(.+);/)
+            tmp_file.puts "set " + stack.join(' ') + " #{$1}"
+          elsif (line =~ /\}$/)
+            stack.pop
+          elsif (line =~ /\/\*(.*)\*\//)
+            tmp_file.puts("# #{$1.strip}")
+          else
+            STDERR.puts "Don't know how to handle '#{line}'"
+          end
+        end
+        tmp_file.close
+        file.close
+        File.rename("#{config_file}/#{file}.tmp", "#{config_file}/#{file}")
+      end
+    end
+  end
+end
+
+SrxUtils.start

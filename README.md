@@ -1,4 +1,6 @@
-config_parser
-=============
+Config Parser
+==========
 
-Basic Device Configuration Parser
+Introduction
+------------
+
