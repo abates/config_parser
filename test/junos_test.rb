@@ -47,6 +47,12 @@ class JunosTest < Test::Unit::TestCase
     assert(!config['security']['zones']['security-zone']['trust']['address-book']['address-set']['TRUST-SET1'].include?("192.168.4.1"))
   end
 
+  test "interface unit lookup" do
+    config = get_config()
+    assert(config['interfaces']['em0.0'])
+    assert_equal(Junos::InterfaceUnit, config['interfaces']['em0.0'].class)
+  end
+
   def get_config
     return Junos::Parser.parse_file(File.dirname(__FILE__) + "/configs/junos_srx.cfg")
   end

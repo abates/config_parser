@@ -50,8 +50,8 @@ module Junos
     tag "address:([^:]+)", :class => Address, :name => 'address'
 
     def lookup address
-      if (address == 'any')
-        return 'any'
+      if (address =~ /^any/)
+        return address
       elsif (self['address'][address])
         return self['address'][address]
       elsif (self['address-set'][address])
@@ -174,7 +174,7 @@ module Junos
           policy_set.each do |to_zone_name, policies|
             if (to_zone.nil? || to_zone == to_zone_name)
               policies['policy'].each do |policy_name, policy|
-                block.call(from_zone_name, to_zone_name, policy['policy']) unless (block.nil?)
+                block.call(from_zone_name, to_zone_name, policy) unless (block.nil?)
               end
             end
           end
